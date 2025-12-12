@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import axios from 'axios'
+import api from '../services/api'
 
 interface User {
   id: string
@@ -55,10 +55,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (storedToken && storedUser) {
           setToken(storedToken)
           setUser(JSON.parse(storedUser))
-          axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
-          
+
           try {
-            const response = await axios.get('/api/v1/auth/me')
+            const response = await api.get('/v1/auth/me')
             setUser(response.data)
           } catch (error) {
             console.log('Token inválido, limpiando sesión')
@@ -77,7 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post('/api/v1/auth/login', { email, password })
+      const response = await api.post('/v1/auth/login', { email, password })
       const { access_token, refresh_token, user: userData } = response.data
 
       localStorage.setItem('access_token', access_token)
@@ -86,7 +85,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setToken(access_token)
       setUser(userData)
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
 
       return response.data
     } catch (error: any) {
@@ -96,21 +94,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (data: any) => {
     try {
-      const response = await axios.post('/api/v1/auth/register', data)
+      const response = await api.post('/v1/auth/register', data)
       const { access_token, refresh_token } = response.data
 
       if (access_token) {
         localStorage.setItem('access_token', access_token)
         localStorage.setItem('refresh_token', refresh_token)
         setToken(access_token)
-        
-        const userResponse = await axios.get('/api/v1/auth/me', {
-          headers: { Authorization: `Bearer ${access_token}` }
-        })
-        
+
+        const userResponse = await api.get('/v1/auth/me')
+
         setUser(userResponse.data)
         localStorage.setItem('user', JSON.stringify(userResponse.data))
-        axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
       }
 
       return response.data
@@ -129,7 +124,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user')
     setToken(null)
     setUser(null)
-    delete axios.defaults.headers.common['Authorization']
   }
 
   const refreshToken = async () => {
@@ -137,14 +131,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const storedRefreshToken = localStorage.getItem('refresh_token')
       if (!storedRefreshToken) throw new Error('No refresh token available')
 
-      const response = await axios.post('/api/v1/auth/refresh', {
+      const response = await api.post('/v1/auth/refresh', {
         refresh_token: storedRefreshToken
       })
 
       const { access_token } = response.data
       localStorage.setItem('access_token', access_token)
       setToken(access_token)
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
 
       return access_token
     } catch (error) {
