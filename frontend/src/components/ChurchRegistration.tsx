@@ -170,7 +170,8 @@ const ChurchRegistration: React.FC = () => {
     }
   })
 
-  const mutation = useMutation(registerChurch, {
+  const mutation = useMutation({
+    mutationFn: registerChurch,
     onSuccess: (data) => {
       console.log('🎉 Registro exitoso:', data)
       setIsSuccess(true)
